@@ -5,8 +5,8 @@ lock "~> 3.19.1"
 set :stages, %w(production staging)
 set :default_stage, "production"
 
-set :application, "yeta_billing_service"
-set :repo_url, "https://github.com/techzenithoff/yeta_billings_service.git"
+set :application, "yeta_watch_history_service"
+set :repo_url, "https://github.com/techzenithoff/yeta-watch-history-service.git"
 set :ssh_options, { auth_methods: %w(password), password: "AMOSXZIBITDE88" }
 
 set :git_http_username, 'techzenithoff'
