@@ -16,4 +16,4 @@ namespace :deploy do
 end
 
 # Hook pour exécuter après 'deploy:updated' (après mise à jour du code)
-after 'deploy:updated', 'deploy:copy_swagger'
+#after 'deploy:updated', 'deploy:copy_swagger'
