@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watch-history-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: watch-history-service
+  template:
+    metadata:
+      labels:
+        app: watch-history-service
+    spec:
+      imagePullSecrets:
+        - name: registry-yeta-registry
+      containers:
+        - name: watch-history-service
+          image: registry.digitalocean.com/yeta-registry/watch-history-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+            # Ajoute ces lignes explicitement :
+          command: ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+          
+          env:
+            #- name: RAILS_ENV
+            #  value: production
+            - name: RAILS_LOG_TO_STDOUT
+              value: "true"
+            - name: RAILS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rails-secret-watch-history-service
+                  key: RAILS_MASTER_KEY
+          
+          # Injection automatique des variables PRODUCTION_POSTGRES_...
+          envFrom:
+            - secretRef:
+                name: watch-history-service-env    # Contient RAILS_ENV, URLs, et Timeouts
+            - secretRef:
+                name: watch-history-service-db # Contient les infos DB
+            - secretRef:
+                name: rabbitmq-credentials # Contient les accès RabbitMQ
+
+          volumeMounts:
+            - name: rsa-keys-volume
+              mountPath: /app/config/keys
+              readOnly: true
+
+      volumes:
+        - name: rsa-keys-volume
+          secret:
+            secretName: watch-history-service-keys
+            items:
+              # Mapping : Clé du secret -> Chemin relatif dans mountPath
+              - key: jwt-public-key
+                path: jwt/user-service.pem
+              - key: interservice-private-key
+                path: interservice/private.pem

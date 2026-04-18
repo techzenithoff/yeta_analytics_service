@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: watch-history-service
+spec:
+  selector:
+    app: watch-history-service
+  ports:
+    - protocol: TCP
+      port: 80          # Le port utilisé par Traefik pour appeler le service
+      targetPort: 3000  # Le port réel de ton conteneur Rails (Puma)
+  type: ClusterIP

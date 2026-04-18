@@ -1,38 +1,37 @@
-
-# Postgresql config
-development:
+default: &default
   adapter: postgresql
   encoding: unicode
-  database: <%= Rails.application.credentials.dig(:postgresql, :development, :database_name) %>
-  pool: 5
-  host:     localhost
-  username: <%= Rails.application.credentials.dig(:postgresql, :development, :postgres_username) %>
-  password: <%= Rails.application.credentials.dig(:postgresql, :development, :postgres_password) %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("DEVELOPMENT_POSTGRES_DB") { "watch_history_service_development" } %>
+  host: <%= ENV.fetch("DEVELOPMENT_POSTGRES_HOST") { "localhost" } %>
+  username: <%= ENV.fetch("DEVELOPMENT_POSTGRES_USER") { "postgres" } %>
+  password: <%= ENV.fetch("DEVELOPMENT_POSTGRES_PASSWORD") { "" } %>
 
 test:
-  adapter: postgresql
-  encoding: unicode
-  database: <%= Rails.application.credentials.dig(:postgresql, :test, :database_name) %>
-  pool: 5
-  host:     localhost
-  username: <%= Rails.application.credentials.dig(:postgresql, :test, :postgres_username) %>
-  password: <%= Rails.application.credentials.dig(:postgresql, :test, :postgres_password) %>
-
+  <<: *default
+  database: <%= ENV.fetch("TEST_POSTGRES_DB") { "watch_history_service_test" } %>
+  host: <%= ENV.fetch("TEST_POSTGRES_HOST") { "localhost" } %>
+  username: <%= ENV.fetch("TEST_POSTGRES_USER") { "postgres" } %>
+  password: <%= ENV.fetch("TEST_POSTGRES_PASSWORD") { "" } %>
 
 staging:
-  adapter: postgresql
-  encoding: unicode
-  database: <%= Rails.application.credentials.dig(:postgresql, :staging, :database_name) %>
-  pool: 5
-  host:     localhost
-  username: <%= Rails.application.credentials.dig(:postgresql, :staging, :postgres_username) %>
-  password: <%= Rails.application.credentials.dig(:postgresql, :staging, :postgres_password) %>
+  <<: *default
+  database: <%= ENV.fetch("STAGING_POSTGRES_DB") { nil } %>
+  host: <%= ENV.fetch("STAGING_POSTGRES_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("STAGING_POSTGRES_PORT") { 25060 } %>
+  username: <%= ENV.fetch("STAGING_POSTGRES_USER") { nil } %>
+  password: <%= ENV.fetch("STAGING_POSTGRES_PASSWORD") { nil } %>
+  sslmode: 'require'
 
 production:
-  adapter: postgresql
-  encoding: unicode
-  database: <%= Rails.application.credentials.dig(:postgresql, :production, :database_name) %>
-  pool: 5
-  host:     localhost
-  username: <%= Rails.application.credentials.dig(:postgresql, :production, :postgres_username) %>
-  password: <%= Rails.application.credentials.dig(:postgresql, :production, :postgres_password) %>
+  <<: *default
+  database: <%= ENV.fetch("PRODUCTION_POSTGRES_DB") { nil } %>
+  maintenance_db: <%= ENV.fetch("PRODUCTION_POSTGRES_DB") %>
+  host: <%= ENV.fetch("PRODUCTION_POSTGRES_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("PRODUCTION_POSTGRES_PORT") { 25060 } %>
+  username: <%= ENV.fetch("PRODUCTION_POSTGRES_USER") { nil } %>
+  password: <%= ENV.fetch("PRODUCTION_POSTGRES_PASSWORD") { nil } %>
+  sslmode: 'require'

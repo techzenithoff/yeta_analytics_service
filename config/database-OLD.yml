@@ -1,0 +1,38 @@
+
+# Postgresql config
+development:
+  adapter: postgresql
+  encoding: unicode
+  database: <%= Rails.application.credentials.dig(:postgresql, :development, :database_name) %>
+  pool: 5
+  host:     localhost
+  username: <%= Rails.application.credentials.dig(:postgresql, :development, :postgres_username) %>
+  password: <%= Rails.application.credentials.dig(:postgresql, :development, :postgres_password) %>
+
+test:
+  adapter: postgresql
+  encoding: unicode
+  database: <%= Rails.application.credentials.dig(:postgresql, :test, :database_name) %>
+  pool: 5
+  host:     localhost
+  username: <%= Rails.application.credentials.dig(:postgresql, :test, :postgres_username) %>
+  password: <%= Rails.application.credentials.dig(:postgresql, :test, :postgres_password) %>
+
+
+staging:
+  adapter: postgresql
+  encoding: unicode
+  database: <%= Rails.application.credentials.dig(:postgresql, :staging, :database_name) %>
+  pool: 5
+  host:     localhost
+  username: <%= Rails.application.credentials.dig(:postgresql, :staging, :postgres_username) %>
+  password: <%= Rails.application.credentials.dig(:postgresql, :staging, :postgres_password) %>
+
+production:
+  adapter: postgresql
+  encoding: unicode
+  database: <%= Rails.application.credentials.dig(:postgresql, :production, :database_name) %>
+  pool: 5
+  host:     localhost
+  username: <%= Rails.application.credentials.dig(:postgresql, :production, :postgres_username) %>
+  password: <%= Rails.application.credentials.dig(:postgresql, :production, :postgres_password) %>

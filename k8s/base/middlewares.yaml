@@ -1,0 +1,39 @@
+---
+# 1. LES HEADERS (Pour Rails & Sécurité)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: watch-history-service-headers
+  namespace: production
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Proto: "https"
+    browserXssFilter: true
+    contentTypeNosniff: true
+    forceSTSHeader: true
+    stsSeconds: 31536000
+    stsIncludeSubdomains: true
+    stsPreload: true
+
+---
+# 2. LA COMPRESSION
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: watch-history-service-compress
+  namespace: production
+spec:
+  compress: {}
+
+---
+# 3. LE BUFFERING (Protection)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: watch-history-service-buffering
+  namespace: production
+spec:
+  buffering:
+    maxRequestBodyBytes: 2097152
+    memRequestBodyBytes: 1048576

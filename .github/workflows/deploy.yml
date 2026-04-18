@@ -1,0 +1,149 @@
+name: Build and Deploy watch-history-service
+
+on:
+  push:
+    branches: [master, staging]
+
+env:
+  REGISTRY: registry.digitalocean.com/yeta-registry
+  SERVICE_NAME: watch-history-service
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # C'est ici que la magie opère :
+    environment: ${{ github.ref_name == 'master' && 'production' || 'staging' }}
+    env:
+      NAMESPACE: ${{ github.ref == 'refs/heads/master' && 'production' || 'staging' }}
+      PREFIX: ${{ github.ref == 'refs/heads/master' && 'PRODUCTION' || 'STAGING' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Login DOCR
+        run: doctl registry login --expiry-seconds 600
+
+      - name: Build and push image
+        run: |
+          docker build -t $REGISTRY/$SERVICE_NAME:${{ github.sha }} .
+          docker push $REGISTRY/$SERVICE_NAME:${{ github.sha }}
+
+      - name: Save kubeconfig
+        run: doctl kubernetes cluster kubeconfig save ${{ secrets.CLUSTER_NAME }}
+
+      # ─── GESTION DYNAMIQUE DU .ENV ───
+      - name: Create Dynamic Env Secret
+        run: |
+          # Génération du .env avec uniquement la variable d'environnement de base
+          cat <<'EOF' > .env
+          RAILS_ENV=${{ env.NAMESPACE }}
+          SERVICE_NAME=${{ env.SERVICE_NAME }}
+
+          # Configuration Application
+          ACCESS_TOKEN_EXPIRATION=${{ vars.ACCESS_TOKEN_EXPIRATION }}
+          INTERNAL_TOKEN_EXPIRATION=${{ vars.INTERNAL_TOKEN_EXPIRATION }}
+          #REFRESH_TOKEN_EXPIRATION=${{ vars.REFRESH_TOKEN_EXPIRATION }}
+          OTP_EXPIRATION=${{ vars.OTP_EXPIRATION }}
+          #USER_SERVICE_URL=${{ vars.USER_SERVICE_URL }}
+          JWT_ACCEPTED_AUDIENCES=${{ vars.JWT_ACCEPTED_AUDIENCES }}
+
+          # Chemins des clés PEM pour le service d'authentification
+          JWT_PUBLIC_KEYS_DIR=${{ vars.JWT_PUBLIC_KEYS_DIR }}
+
+          INTERNAL_PRIVATE_KEY_PATH=${{ vars.INTERNAL_PRIVATE_KEY_PATH }}
+          INTERNAL_PUBLIC_KEYS_DIR=${{ vars.INTERNAL_PUBLIC_KEYS_DIR }}
+          
+          EOF
+
+          
+          
+          kubectl create secret generic watch-history-service-env \
+            --from-env-file=.env \
+            -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      # ─── SECRETS RSA (Gérés via GitHub) ───
+      - name: Create RSA Keys Secret
+        run: |
+          mkdir -p jwt interservice
+          echo "${{ secrets.JWT_PUBLIC_PEM }}" > jwt/user-service.pem
+          echo "${{ secrets.INTERSERVICE_PRIVATE_PEM }}" > interservice/private.pem
+
+          kubectl create secret generic watch-history-service-keys \
+            --from-file=jwt-public-key=jwt/user-service.pem \
+            --from-file=interservice-private-key=interservice/private.pem \
+            -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      # ─── RAILS MASTER KEY (Géré via GitHub) ───
+      - name: Create Rails Secrets
+        run: |
+          kubectl create secret generic rails-secret-watch-history-service \
+            --from-literal=RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY }} \
+            -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      # ─── GESTION DYNAMIQUE DE LA BASE DE DONNÉES ───
+      - name: Create DB Secret
+        run: |
+          kubectl create secret generic watch-history-service-db \
+            --from-literal=PRODUCTION_POSTGRES_HOST=${{ vars.POSTGRES_HOST }} \
+            --from-literal=PRODUCTION_POSTGRES_USER=${{ vars.POSTGRES_USER }} \
+            --from-literal=PRODUCTION_POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            --from-literal=PRODUCTION_POSTGRES_DB=${{ vars.POSTGRES_DB }} \
+            --from-literal=PRODUCTION_POSTGRES_PORT=${{ vars.POSTGRES_PORT }} \
+            -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      # ─── INJECTION TAG IMAGE ───
+      - name: Inject image tag
+        run: sed -i "s/latest/${{ github.sha }}/g" k8s/overlays/${{ env.NAMESPACE }}/kustomization.yaml
+
+      # ─── ROUTING & TRAEFIK ───
+      - name: Apply Traefik Routing
+        run: |
+          # 1. On applique les middlewares en premier (Headers, Compression, HTTPS fix)
+          kubectl apply -f k8s/base/middlewares.yaml -n ${{ env.NAMESPACE }}
+          # 2. On applique l'IngressRoute séparée (Host & Auth Path)
+          kubectl apply -f k8s/base/ingress-route.yaml -n ${{ env.NAMESPACE }}
+
+      # ─── NETWORK POLICIES ───
+      - name: Apply Network Policies
+        run: |
+          # On applique la règle Egress située dans base
+          kubectl apply -f k8s/base/network-policy.yaml -n ${{ env.NAMESPACE }}
+
+      # ─── DEPLOY ET MIGRATION ───
+      - name: Deploy and Migrate
+        run: |
+          # 1. On nettoie l'ancien Job pour permettre sa recréation
+          kubectl delete job db-migrate-watch-history-service -n ${{ env.NAMESPACE }} --ignore-not-found --wait=true
+          
+          # 2. On déploie le reste (Deployment, Service) via Kustomize
+          kubectl apply -k k8s/overlays/${{ env.NAMESPACE }}
+          
+          # 3. On attend que la migration Rails se termine
+          if ! kubectl wait --for=condition=complete job/db-migrate-watch-history-service -n ${{ env.NAMESPACE }} --timeout=300s; then
+            echo "❌ Échec de la migration. Voici les logs du Job :"
+            kubectl logs job/db-migrate-watch-history-service -n ${{ env.NAMESPACE }}
+            exit 1
+          fi
+
+      # ─── REDÉMARRAGE POUR APPLIQUER LES CHANGEMENTS DU .ENV ───
+      - name: Restart Deployment
+        run: |
+          kubectl rollout restart deployment/$SERVICE_NAME -n ${{ env.NAMESPACE }}
+
+      - name: Rollout status
+        run: |
+          kubectl rollout status deployment/$SERVICE_NAME \
+            --namespace=${{ env.NAMESPACE }} \
+            --timeout=120s
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          kubectl rollout undo deployment/$SERVICE_NAME \
+            --namespace=${{ env.NAMESPACE }}

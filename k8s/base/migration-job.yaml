@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate-watch-history-service
+spec:
+  template:
+    metadata:
+      # --- AJOUT CRUCIAL ---
+      labels:
+        app: watch-history-service 
+      # ---------------------
+    spec:
+      imagePullSecrets:
+        - name: registry-yeta-registry
+      containers:
+        - name: db-migrate
+          image: registry.digitalocean.com/yeta-registry/watch-history-service
+          #command: ["/bin/sh", "-c", "bundle exec rails db:migrate"]
+          command: ["/bin/sh", "-c", "bundle exec rails db:migrate db:seed"]
+          env:
+            #- name: RAILS_ENV
+            #  value: production
+            - name: RAILS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rails-secret-watch-history-service
+                  key: RAILS_MASTER_KEY
+          envFrom:
+            - secretRef:
+                name: watch-history-service-env
+            - secretRef:
+                name: watch-history-service-db
+          volumeMounts:
+            - name: rsa-keys-volume
+              mountPath: /app/config/keys
+              readOnly: true
+      volumes:
+        - name: rsa-keys-volume
+          secret:
+            secretName: watch-history-service-keys
+            items:
+              # Mapping : Clé du secret -> Chemin relatif dans mountPath
+              - key: jwt-public-key
+                path: jwt/user-service.pem
+              - key: interservice-private-key
+                path: interservice/private.pem
+      restartPolicy: OnFailure

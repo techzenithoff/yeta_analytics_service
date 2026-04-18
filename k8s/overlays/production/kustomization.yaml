@@ -1,0 +1,8 @@
+namespace: production
+
+resources:
+  - ../../base
+
+images:
+  - name: registry.digitalocean.com/yeta-registry/watch-history-service
+    newTag: latest # Ce mot "latest" sera remplacé par le SHA lors du déploiement
