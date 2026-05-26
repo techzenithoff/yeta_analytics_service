@@ -20,7 +20,35 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
-            # Ajoute ces lignes explicitement :
+          
+          # --- AJOUTS RÉSEAU & RESSOURCES OPTIMISÉS ---
+          resources:
+            requests:
+              cpu: "100m"      # Allocation garantie pour stabiliser le HPA
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          livenessProbe:
+            httpGet:
+              path: /health    # Vérifie l'endpoint de santé Rails
+              port: 3000
+            initialDelaySeconds: 45  # Temps de boot (Puma + DB + RabbitMQ)
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          # --------------------------------------------
+
           command: ["bundle", "exec", "puma", "-C", "config/puma.rb"]
           
           env:
