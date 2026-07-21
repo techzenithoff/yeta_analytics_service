@@ -35,3 +35,13 @@ spec:
       ports:
         - protocol: TCP
           port: 5672
+    # Communication Inter-Service (Media Service)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: media-service
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 3000

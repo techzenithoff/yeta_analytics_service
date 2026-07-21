@@ -58,6 +58,8 @@ jobs:
 
           INTERNAL_PRIVATE_KEY_PATH=${{ vars.INTERNAL_PRIVATE_KEY_PATH }}
           INTERNAL_PUBLIC_KEYS_DIR=${{ vars.INTERNAL_PUBLIC_KEYS_DIR }}
+
+          MEDIA_SERVICE_URL=${{ vars.MEDIA_SERVICE_URL }}
           
           EOF
 
@@ -73,10 +75,13 @@ jobs:
           mkdir -p jwt interservice
           echo "${{ secrets.JWT_PUBLIC_PEM }}" > jwt/user-service.pem
           echo "${{ secrets.INTERSERVICE_PRIVATE_PEM }}" > interservice/private.pem
+          echo "${{ secrets.USER_SERVICE_PEM }}" > interservice/user-service.pem
 
           kubectl create secret generic watch-history-service-keys \
             --from-file=jwt-public-key=jwt/user-service.pem \
             --from-file=interservice-private-key=interservice/private.pem \
+            --from-file=interservice-user-service-key=interservice/user-service.pem \
+
             -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
       # ─── RAILS MASTER KEY (Géré via GitHub) ───
