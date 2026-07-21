@@ -106,3 +106,10 @@ gem 'faraday', '~> 1.10', '>= 1.10.3'
 #Help to kill N+1 queries and unused eager loading.
 gem 'bullet', '~> 7.2'
 gem 'httparty', '~> 0.23.2'
+
+group :development, :test do
+  gem 'dotenv-rails'
+end
+
+
+gem 'pagy', '~> 6.5'

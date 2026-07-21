@@ -20,7 +20,7 @@ require "rails/test_unit/railtie"
 Bundler.require(*Rails.groups)
 
 # Custom
-require './lib/shared_utils/utils'
+#require './lib/shared_utils/utils'
 
 module WatchHistoryService
   class Application < Rails::Application
@@ -41,18 +41,15 @@ module WatchHistoryService
     config.api_only = true
 
 
-    #config.autoload_paths << Rails.root.join('app/services')
-    config.autoload_paths += Dir[Rails.root.join('app', 'services', '*')]
+  
+    config.autoload_paths << Rails.root.join('lib')
+    config.eager_load_paths << Rails.root.join('lib')
 
 
+   
+    config.autoload_paths << Rails.root.join('app/services')
+    config.eager_load_paths << Rails.root.join('app/services')
 
 
-    # Rack-Cors
-    config.middleware.insert_before 0, Rack::Cors do
-      allow do
-        origins '*'
-        resource '*', headers: :any, methods: [:get, :post, :put, :patch,  :delete, :options]
-      end
-    end
   end
 end

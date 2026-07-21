@@ -3,7 +3,7 @@ class WatchHistory < ApplicationRecord
    # Include shared utils.
     include SharedUtils::Generate
 
-    before_save :generate_random_number_uid
+    before_save :generate_uuid
     
     # Change default params ID to uid
     def to_param
@@ -13,7 +13,7 @@ class WatchHistory < ApplicationRecord
   #belongs_to :user, foreign_key: :user_id, optional: true  # User dans un autre service
   #belongs_to :watchable, polymorphic: true, optional: true
 
-  validates :account_id, :watchable_type, :watchable_id, presence: true
+  #validates :account_id, :watchable_type, :watchable_id, presence: true
 
   def progress_percent
     return 0 if duration_seconds.blank? || duration_seconds.zero?

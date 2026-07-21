@@ -1,33 +1,24 @@
 module Api::V1
 	class ApiController < ApplicationController
 		
-		before_action :authenticate_account!
+		include Pagy::Backend
 
-		attr_reader :current_account_id
-		attr_reader :access_token # For inter services 
+		#before_action :authenticate_account!
 
-		private
+        include Authenticatable
 
-		def authenticate_account!
+		
+        def pagination_dict(pagy)
+        {
+            current_page: pagy.page,
+            next_page:    pagy.next,
+            prev_page:    pagy.prev,
+            items_per_page:  pagy.items,
+            total_pages:  pagy.pages,
+            total_count:  pagy.count
+        }
+        end
 
-			token = request.headers["Authorization"]&.split(' ')&.last
-
-			header = request.headers['Authorization']
-			token = header.split(' ').last if header
-
-			@access_token = token
-
-			payload = TokenVerifierService.decode(token)
-
-			if payload.nil?
-				render json: { error: 'Unauthorized' }, status: :unauthorized
-			else
-
-				
-				@current_account_id = payload["account_id"]
-
-				
-			end
-		end
+        
 	end
 end

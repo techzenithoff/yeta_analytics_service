@@ -1,9 +1,9 @@
 class CreateWatchHistories < ActiveRecord::Migration[6.1]
   def change
     create_table :watch_histories do |t|
-      t.string :uid
+      t.uuid :uuid, null: false
       t.references :watchable, polymorphic: true, index: true
-      t.references :account, index: true #null: false, foreign_key: true
+      t.bigint :account_id, null: false, index: true
       t.datetime :started_at
       t.datetime :last_watched_at
       t.integer :position_seconds
