@@ -44,4 +44,6 @@ spec:
                 path: jwt/user-service.pem
               - key: interservice-private-key
                 path: interservice/private.pem
+              - key: interservice-user-service-key
+                path: interservice/user-service.pem
       restartPolicy: OnFailure
