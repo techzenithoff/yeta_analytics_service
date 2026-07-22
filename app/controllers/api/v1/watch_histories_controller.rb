@@ -89,7 +89,8 @@
             history.save!
         end
 
-        render json: serialize_history(history), status: :ok
+        #render json: serialize_history(history), status: :ok
+        render json: history, status: :ok
 
     rescue ActiveRecord::RecordInvalid => e
         render json: {
