@@ -29,11 +29,14 @@ class WatchHistory < ApplicationRecord
     
     # Change default params ID to uid
     def to_param
-      uid
+      uuid
     end
 
-  #belongs_to :user, foreign_key: :user_id, optional: true  # User dans un autre service
-  #belongs_to :watchable, polymorphic: true, optional: true
+ 
+
+   validates :watchable_type, presence: true
+    validates :watchable_id, presence: true
+    validates :account_id, presence: true
 
   #validates :account_id, :watchable_type, :watchable_id, presence: true
 
@@ -53,7 +56,13 @@ class WatchHistory < ApplicationRecord
   # Validation pour s'assurer que la valeur est strictement l'un de ces éléments
     validates :watchable_type, inclusion: { 
         in:  WATCHABLE_TYPES, 
-        message: "n'est pas un type de favori valide (doit être l'un de : %{value})" 
+        message: "n'est pas un type valide (doit être l'un de : %{value})" 
+    }
+
+    # Validation d'unicité : un compte ne peut pas avoir deux fois le même favori (type + id)
+    validates :watchable_id, uniqueness: { 
+        scope: [:account_id, :watchable_type], 
+        message: "est déjà dans l'historique de lecture" 
     }
 
 

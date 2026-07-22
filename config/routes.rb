@@ -4,7 +4,11 @@ Rails.application.routes.draw do
 
   namespace :api do 
     namespace :v1 do
-      resources :watch_histories, path: "watch-histories"
+        resources :watch_histories, path: "watch-histories" do 
+            collection do 
+                get "my-histories", to: "watch_histories#my_histories"
+            end
+        end
     end
   end
   

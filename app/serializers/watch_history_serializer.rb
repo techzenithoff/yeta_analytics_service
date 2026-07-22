@@ -17,7 +17,6 @@
 #
 
 class WatchHistorySerializer < ActiveModel::Serializer
-  attributes :id, :uid, :started_at, :last_watched_at, :position_seconds, :duration_seconds, :completed
-  #has_one :watchable
-  #has_one :account
+  attributes :id, :uuid, :watchable_type,:watchable_id, :started_at, :last_watched_at, :position_seconds, :duration_seconds, :completed
+  
 end

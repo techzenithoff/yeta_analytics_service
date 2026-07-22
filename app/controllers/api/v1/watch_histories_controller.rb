@@ -9,12 +9,41 @@
 
     # GET /watch_histories
     def index
-      histories = WatchHistory.where(account_id: current_account_id).order(last_watched_at: :desc)
+      @watch_histories = WatchHistory.where(account_id: current_account_id).order(last_watched_at: :desc)
 
         # Appels inter-services : récupération des métadonnées via HTTP
-        render json: histories.map { |h| serialize_history(h) }
+        #render json: histories.map { |h| serialize_history(h) }
 
-      #render json: @watch_histories
+      render json: @watch_histories
+    end
+
+    def my_histories
+        # 1. Extraction et sécurisation des paramètres de pagination
+        page = params.fetch(:page, 1).to_i.clamp(1, Float::INFINITY).to_i
+        per_page = params.fetch(:per_page, 20).to_i.clamp(1, 50)
+
+        # 2. Appel du service d'agrégation pour l'utilisateur courant
+        histories_data = WatchHistories::WatchHistoriesService.my_histories(current_account_id, page: page, per_page: per_page)
+
+        # 3. Réponse JSON propre
+        render json: {
+            status: 200,
+            watch_histories: histories_data[:items],
+            meta: {
+                page: page,
+                per_page: per_page,
+                total_count: histories_data[:total_count],
+                total_pages: histories_data[:total_pages]
+            }
+        }, status: :ok
+
+    rescue StandardError => e
+        # 4. Gestion de secours (Fallback / Résilience) si un service distant crash totalement
+        Rails.logger.error("Erreur lors de la récupération de l'historique pour l'utilisateur #{current_account_id}: #{e.message}")
+        render json: {
+            success: false,
+            error: "Impossible de charger l'historique pour le moment. Veuillez réessayer plus tard."
+        }, status: :service_unavailable
     end
 
     # GET /watch_histories/1
@@ -117,18 +146,27 @@
 
     # DELETE /watch_histories/1
     def destroy
-      @watch_history.destroy
+      
+      begin
+                
+                 @watch_history.destroy
+
+                render json: { message: "Élément supprimé avec succès",  status: 200}, status: :ok
+
+            rescue => e
+                render json: {message: "Erreur lors de la suppression de l'élément dans l'historique de lecture.", errors: e.message, status: 500}, status: :internal_server_error
+            end
     end
 
     private
       # Use callbacks to share common setup or constraints between actions.
       def set_watch_history
-        @watch_history = WatchHistory.find(params[:id])
+        @watch_history = WatchHistory.find_by(uuid: params[:id])
       end
 
       # Only allow a list of trusted parameters through.
       def watch_history_params
-        params.require(:watch_history).permit(:uid, :watchable_id, :account_id, :started_at, :last_watched_at, :position_seconds, :duration_seconds, :completed)
+        params.require(:watch_history).permit(:uuid, :watchable_id, :account_id, :started_at, :last_watched_at, :position_seconds, :duration_seconds, :completed)
       end
 
       # Enrichir la réponse avec les infos du contenu distant

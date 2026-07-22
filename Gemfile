@@ -92,9 +92,7 @@ group :development do
 end
 
 
-# For Api docs
-gem 'rswag-api'
-gem 'rswag-ui'
+
 
 group :development, :test, :production do
   gem 'rspec-rails' # For rails
@@ -111,5 +109,6 @@ group :development, :test do
   gem 'dotenv-rails'
 end
 
+gem 'request_store', '~> 1.7'
 
 gem 'pagy', '~> 6.5'
