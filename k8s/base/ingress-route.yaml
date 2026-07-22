@@ -2,10 +2,11 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: watch-history-service-route
-  namespace: production
+  #namespace: production
 spec:
   entryPoints:
-    - websecure
+    #- websecure
+    - web
   routes:
     - match: Host(`api.yetaplus.com`) && (PathPrefix(`/api/v1/watch-histories`))
       kind: Rule
@@ -19,5 +20,5 @@ spec:
         - name: watch-history-service-buffering
         - name: api-gateway-ratelimit
         # - name: strip-api-prefix # À garder si Rails répond 404 plus tard
-  tls:
-    secretName: yeta-api-tls
+  #tls:
+  #  secretName: yeta-api-tls
