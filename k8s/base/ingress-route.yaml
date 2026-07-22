@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`api.yetaplus.com`) && (PathPrefix(`/api/v1/movies`))
+    - match: Host(`api.yetaplus.com`) && (PathPrefix(`/api/v1/watch-histories`))
       kind: Rule
       priority: 500 # Priorité haute pour passer devant la gateway globale
       services:
