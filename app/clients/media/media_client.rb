@@ -1,6 +1,6 @@
 # app/clients/media/media_client.rb
 module Media
-    class MadiaClient < BaseClient
+    class MediaClient < BaseClient
         base_uri ENV.fetch('MEDIA_SERVICE_URL', 'http://billing-service.internal')
 
         def self.audience_name
