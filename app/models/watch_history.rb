@@ -1,7 +1,11 @@
 class WatchHistory < ApplicationRecord
 
-   # Include shared utils.
+    # Include shared utils.
     include SharedUtils::Generate
+
+    # Liste des types autorisés
+    WATCHABLE_TYPES = %w[Movie Episode].freeze
+
 
     before_save :generate_uuid
     
@@ -27,4 +31,12 @@ class WatchHistory < ApplicationRecord
       completed: new_position >= (duration_seconds || 0)
     )
   end
+
+  # Validation pour s'assurer que la valeur est strictement l'un de ces éléments
+    validates :watchable_type, inclusion: { 
+        in:  WATCHABLE_TYPES, 
+        message: "n'est pas un type de favori valide (doit être l'un de : %{value})" 
+    }
+
+
 end

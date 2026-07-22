@@ -50,8 +50,6 @@
     def create
 
 
-        puts "PARAMS: #{params.inspect}"
-
 
         watchable_type = params[:watchable_type]&.strip
         watchable_id = params[:watchable_id]&.to_i

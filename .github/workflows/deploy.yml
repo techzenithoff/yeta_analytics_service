@@ -63,8 +63,6 @@ jobs:
           
           EOF
 
-          
-          
           kubectl create secret generic watch-history-service-env \
             --from-env-file=.env \
             -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
@@ -77,15 +75,10 @@ jobs:
           echo "${{ secrets.INTERSERVICE_PRIVATE_PEM }}" > interservice/private.pem
           echo "${{ secrets.USER_SERVICE_PEM }}" > interservice/user-service.pem
 
-
-          # 1. On supprime le secret s'il existe déjà pour éviter le conflit d'unicité
-          kubectl delete secret watch-history-service-keys -n ${{ env.NAMESPACE }} --ignore-not-found=true
-
           kubectl create secret generic watch-history-service-keys \
             --from-file=jwt-public-key=jwt/user-service.pem \
             --from-file=interservice-private-key=interservice/private.pem \
             --from-file=interservice-user-service-key=interservice/user-service.pem \
-
             -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
       # ─── RAILS MASTER KEY (Géré via GitHub) ───
