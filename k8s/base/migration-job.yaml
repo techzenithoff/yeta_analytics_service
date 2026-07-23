@@ -1,20 +1,20 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: db-migrate-watch-history-service
+  name: db-migrate-rating-service
 spec:
   template:
     metadata:
       # --- AJOUT CRUCIAL ---
       labels:
-        app: watch-history-service 
+        app: rating-service 
       # ---------------------
     spec:
       imagePullSecrets:
         - name: registry-yeta-registry
       containers:
         - name: db-migrate
-          image: registry.digitalocean.com/yeta-registry/watch-history-service
+          image: registry.digitalocean.com/yeta-registry/rating-service
           #command: ["/bin/sh", "-c", "bundle exec rails db:migrate"]
           command: ["/bin/sh", "-c", "bundle exec rails db:migrate db:seed"]
           env:
@@ -23,13 +23,13 @@ spec:
             - name: RAILS_MASTER_KEY
               valueFrom:
                 secretKeyRef:
-                  name: rails-secret-watch-history-service
+                  name: rails-secret-rating-service
                   key: RAILS_MASTER_KEY
           envFrom:
             - secretRef:
-                name: watch-history-service-env
+                name: rating-service-env
             - secretRef:
-                name: watch-history-service-db
+                name: rating-service-db
           volumeMounts:
             - name: rsa-keys-volume
               mountPath: /app/config/keys
@@ -37,7 +37,7 @@ spec:
       volumes:
         - name: rsa-keys-volume
           secret:
-            secretName: watch-history-service-keys
+            secretName: rating-service-keys
             items:
               # Mapping : Clé du secret -> Chemin relatif dans mountPath
               - key: jwt-public-key

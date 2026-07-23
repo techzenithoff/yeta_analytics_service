@@ -1,4 +1,4 @@
-name: Build and Deploy watch-history-service
+name: Build and Deploy rating-service
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: registry.digitalocean.com/yeta-registry
-  SERVICE_NAME: watch-history-service
+  SERVICE_NAME: rating-service
 
 jobs:
   deploy:
@@ -63,7 +63,7 @@ jobs:
           
           EOF
 
-          kubectl create secret generic watch-history-service-env \
+          kubectl create secret generic rating-service-env \
             --from-env-file=.env \
             -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
@@ -75,7 +75,7 @@ jobs:
           echo "${{ secrets.INTERSERVICE_PRIVATE_PEM }}" > interservice/private.pem
           echo "${{ secrets.USER_SERVICE_PEM }}" > interservice/user-service.pem
 
-          kubectl create secret generic watch-history-service-keys \
+          kubectl create secret generic rating-service-keys \
             --from-file=jwt-public-key=jwt/user-service.pem \
             --from-file=interservice-private-key=interservice/private.pem \
             --from-file=interservice-user-service-key=interservice/user-service.pem \
@@ -84,14 +84,14 @@ jobs:
       # ─── RAILS MASTER KEY (Géré via GitHub) ───
       - name: Create Rails Secrets
         run: |
-          kubectl create secret generic rails-secret-watch-history-service \
+          kubectl create secret generic rails-secret-rating-service \
             --from-literal=RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY }} \
             -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
       # ─── GESTION DYNAMIQUE DE LA BASE DE DONNÉES ───
       - name: Create DB Secret
         run: |
-          kubectl create secret generic watch-history-service-db \
+          kubectl create secret generic rating-service-db \
             --from-literal=PRODUCTION_POSTGRES_HOST=${{ vars.POSTGRES_HOST }} \
             --from-literal=PRODUCTION_POSTGRES_USER=${{ vars.POSTGRES_USER }} \
             --from-literal=PRODUCTION_POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
@@ -121,15 +121,15 @@ jobs:
       - name: Deploy and Migrate
         run: |
           # 1. On nettoie l'ancien Job pour permettre sa recréation
-          kubectl delete job db-migrate-watch-history-service -n ${{ env.NAMESPACE }} --ignore-not-found --wait=true
+          kubectl delete job db-migrate-rating-service -n ${{ env.NAMESPACE }} --ignore-not-found --wait=true
           
           # 2. On déploie le reste (Deployment, Service) via Kustomize
           kubectl apply -k k8s/overlays/${{ env.NAMESPACE }}
           
           # 3. On attend que la migration Rails se termine
-          if ! kubectl wait --for=condition=complete job/db-migrate-watch-history-service -n ${{ env.NAMESPACE }} --timeout=300s; then
+          if ! kubectl wait --for=condition=complete job/db-migrate-rating-service -n ${{ env.NAMESPACE }} --timeout=300s; then
             echo "❌ Échec de la migration. Voici les logs du Job :"
-            kubectl logs job/db-migrate-watch-history-service -n ${{ env.NAMESPACE }}
+            kubectl logs job/db-migrate-rating-service -n ${{ env.NAMESPACE }}
             exit 1
           fi
 

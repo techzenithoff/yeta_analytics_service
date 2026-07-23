@@ -4,5 +4,5 @@ resources:
   - ../../base
 
 images:
-  - name: registry.digitalocean.com/yeta-registry/watch-history-service
+  - name: registry.digitalocean.com/yeta-registry/rating-service
     newTag: latest # Ce mot "latest" sera remplacé par le SHA lors du déploiement

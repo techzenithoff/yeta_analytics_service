@@ -1,23 +1,23 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: watch-history-service-route
+  name: rating-service-route
   #namespace: production
 spec:
   entryPoints:
     #- websecure
     - web
   routes:
-    - match: Host(`api.yetaplus.com`) && (PathPrefix(`/api/v1/watch-histories`))
+    - match: Host(`api.yetaplus.com`) && (PathPrefix(`/api/v1/ratings`))
       kind: Rule
       priority: 500 # Priorité haute pour passer devant la gateway globale
       services:
-        - name: watch-history-service
+        - name: rating-service
           port: 80
       middlewares:
-        - name: watch-history-service-headers
-        - name: watch-history-service-compress
-        - name: watch-history-service-buffering
+        - name: rating-service-headers
+        - name: rating-service-compress
+        - name: rating-service-buffering
         - name: api-gateway-ratelimit
         # - name: strip-api-prefix # À garder si Rails répond 404 plus tard
   #tls:

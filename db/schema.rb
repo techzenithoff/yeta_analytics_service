@@ -10,25 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_10_29_125946) do
+ActiveRecord::Schema.define(version: 2026_07_23_105521) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "watch_histories", force: :cascade do |t|
+  create_table "ratings", force: :cascade do |t|
     t.uuid "uuid", null: false
-    t.string "watchable_type"
-    t.bigint "watchable_id"
+    t.string "ratable_type"
+    t.bigint "ratable_id"
+    t.integer "rating", default: 0
+    t.text "comment"
     t.bigint "account_id", null: false
-    t.datetime "started_at"
-    t.datetime "last_watched_at"
-    t.integer "position_seconds"
-    t.integer "duration_seconds"
-    t.boolean "completed"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["account_id"], name: "index_watch_histories_on_account_id"
-    t.index ["watchable_type", "watchable_id"], name: "index_watch_histories_on_watchable"
+    t.index ["account_id"], name: "index_ratings_on_account_id"
+    t.index ["ratable_type", "ratable_id"], name: "index_ratings_on_ratable"
   end
 
 end

@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: watch-history-service
+  name: rating-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: watch-history-service
+      app: rating-service
   template:
     metadata:
       labels:
-        app: watch-history-service
+        app: rating-service
     spec:
      # --- C'EST ICI QU'IL DOIT ÊTRE PLACÉ ---
       topologySpreadConstraints:
@@ -19,14 +19,14 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              app: watch-history-service
+              app: rating-service
       # ---------------------------------------
 
       imagePullSecrets:
         - name: registry-yeta-registry
       containers:
-        - name: watch-history-service
-          image: registry.digitalocean.com/yeta-registry/watch-history-service:latest
+        - name: rating-service
+          image: registry.digitalocean.com/yeta-registry/rating-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -69,15 +69,15 @@ spec:
             - name: RAILS_MASTER_KEY
               valueFrom:
                 secretKeyRef:
-                  name: rails-secret-watch-history-service
+                  name: rails-secret-rating-service
                   key: RAILS_MASTER_KEY
           
           # Injection automatique des variables PRODUCTION_POSTGRES_...
           envFrom:
             - secretRef:
-                name: watch-history-service-env    # Contient RAILS_ENV, URLs, et Timeouts
+                name: rating-service-env    # Contient RAILS_ENV, URLs, et Timeouts
             - secretRef:
-                name: watch-history-service-db # Contient les infos DB
+                name: rating-service-db # Contient les infos DB
             - secretRef:
                 name: rabbitmq-credentials # Contient les accès RabbitMQ
 
@@ -89,7 +89,7 @@ spec:
       volumes:
         - name: rsa-keys-volume
           secret:
-            secretName: watch-history-service-keys
+            secretName: rating-service-keys
             items:
               # Mapping : Clé du secret -> Chemin relatif dans mountPath
               - key: jwt-public-key

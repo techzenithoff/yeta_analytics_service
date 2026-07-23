@@ -1,11 +1,11 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: watch-history-service-egress
+  name: rating-service-policy
 spec:
   podSelector:
     matchLabels:
-      app: watch-history-service # Assure-toi que ton Job et ton Deployment ont ce label !
+      app: rating-service # Assure-toi que ton Job et ton Deployment ont ce label !
   policyTypes:
     - Egress
   egress:

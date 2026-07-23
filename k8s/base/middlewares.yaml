@@ -3,7 +3,7 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: watch-history-service-headers
+  name: rating-service-headers
   namespace: production
 spec:
   headers:
@@ -21,7 +21,7 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: watch-history-service-compress
+  name: rating-service-compress
   namespace: production
 spec:
   compress: {}
@@ -31,7 +31,7 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: watch-history-service-buffering
+  name: rating-service-buffering
   namespace: production
 spec:
   buffering:
