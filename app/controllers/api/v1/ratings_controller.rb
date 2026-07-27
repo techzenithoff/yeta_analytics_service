@@ -2,7 +2,7 @@ module Api
     module V1
         class RatingsController < ApiController
 
-            before_action :authenticate!, only: [:create]
+            before_action :authenticate!#, only: [:create]
 
 
             # GET /api/v1/ratings/summary?ratable_type=Episode&ratable_id=xxx
@@ -24,7 +24,7 @@ module Api
 
 
 
-                summary_data = Rating.summary_for(params[:ratable_type], params[:ratable_id])
+                summary_data = Rating.summary_for(params[:ratable_type], params[:ratable_id], current_account_id)
                 render json: summary_data, status: :ok
 
             rescue StandardError => e

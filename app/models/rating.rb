@@ -31,8 +31,11 @@ class Rating < ApplicationRecord
     validates :account_id, uniqueness: { scope: [:ratable_id, :ratable_type], message: "a déjà noté ce contenu" }
 
     # Calcule le résumé des notes pour un contenu donné (similaire à votre maquette)
-    def self.summary_for(ratable_type, ratable_id)
+    def self.summary_for(ratable_type, ratable_id, account_id)
+
         ratings_scope = where(ratable_type: ratable_type, ratable_id: ratable_id)
+
+        my_rating = ratings_scope.where(account_id: account_id)&.take&.rating
 
         total_reviews = ratings_scope.count
 
@@ -48,6 +51,7 @@ class Rating < ApplicationRecord
         end
 
         {
+            my_rating: my_rating,
             average: average,
             total_reviews: total_reviews,
             distribution: distribution
