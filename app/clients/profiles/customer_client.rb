@@ -1,7 +1,7 @@
 # app/clients/profile/customer_client.rb
 # frozen_string_literal: true
 
-module Profile
+module Profiles
   class CustomerClient < BaseClient
     def self.base_url
       ENV.fetch('PROFILE_SERVICE_INTERNAL_URL', 'http://localhost:3006')
