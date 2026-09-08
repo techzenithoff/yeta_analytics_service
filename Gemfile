@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
-ruby '3.0.7'
+ruby '3.2.3'
 gem 'rails', '~> 6.1.7', '>= 6.1.7.10'
 
 # Reduces boot times through caching; required in config/boot.rb

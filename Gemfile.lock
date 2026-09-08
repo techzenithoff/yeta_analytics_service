@@ -106,9 +106,9 @@ GEM
       logger
     faraday-net_http (3.4.4)
       net-http (~> 0.5)
-    ffi (1.17.2)
     ffi (1.17.2-arm64-darwin)
     ffi (1.17.2-x86_64-darwin)
+    ffi (1.17.2-x86_64-linux-gnu)
     fugit (1.13.0)
       et-orbi (~> 1.4)
       raabro (~> 1.4)
@@ -313,7 +313,7 @@ DEPENDENCIES
   webmock (~> 3.12)
 
 RUBY VERSION
-   ruby 3.0.7p220
+   ruby 3.2.3p157
 
 BUNDLED WITH
    2.5.23

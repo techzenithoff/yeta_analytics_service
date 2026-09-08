@@ -1,4 +1,4 @@
-FROM ruby:3.0.7
+FROM ruby:3.2.3
 
 # Dépendances système + Node 20 + Yarn 1
 RUN apt-get update -qq && apt-get install -y \
