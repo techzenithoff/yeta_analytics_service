@@ -8,19 +8,14 @@ class BaseClient
     def request(method, path, options = {})
       circuit.run(exception: [Faraday::Error, Circuitbox::OpenCircuitError]) do
         response = connection.send(method) do |req|
-          req.url(path)
+          req.url path
+          req.body = options[:body].to_json if options[:body].present?
+          req.params = options[:params] if options[:params].present?
 
-          if options[:params].present?
-            req.params.update(sanitize_params(options[:params]))
-          end
+          # Fusion des headers dynamiques et personnalisés par requête
+          req.headers.merge!(dynamic_headers.merge(options[:headers] || {}))
 
-          merged_headers = dynamic_headers.merge(options[:headers] || {})
-          merged_headers.each { |k, v| req.headers[k] = v }
-
-          if options[:body].present?
-            req.body = options[:body].to_json
-          end
-
+          # Surcharges de timeout
           req.options.timeout = options[:timeout] || DEFAULT_TIMEOUT
           req.options.open_timeout = options[:open_timeout] || DEFAULT_TIMEOUT
         end
@@ -35,31 +30,16 @@ class BaseClient
       error_response(:timeout)
     rescue StandardError => e
       log_error("Exception", e)
-      Rails.logger.error e.backtrace.first(15).join("\n")
       error_response(:exception)
     end
 
     private
 
-    def sanitize_params(params)
-      params.transform_keys(&:to_s).transform_values do |value|
-        case value
-        when Symbol
-          value.to_s
-        when Array
-          value.map { |v| v.is_a?(Symbol) ? v.to_s : v }
-        when Hash
-          sanitize_params(value)
-        else
-          value
-        end
-      end
-    end
-
+    # ===============================
+    # CONFIGURATION FARADAY (Thread-Safe)
+    # ===============================
     def connection
-      @connections ||= {}
-      @connections[name] ||= Faraday.new(url: base_url) do |faraday|
-        faraday.request :json
+      @connection ||= Faraday.new(url: base_url) do |faraday|
         faraday.response :json, content_type: /\bjson$/
         faraday.adapter Faraday.default_adapter
       end
@@ -69,17 +49,22 @@ class BaseClient
       raise NotImplementedError, "Define base_url in subclass"
     end
 
+    # ===============================
+    # CIRCUIT BREAKER
+    # ===============================
     def circuit
-      @circuits ||= {}
-      @circuits[audience_name] ||= Circuitbox.circuit(audience_name.to_sym, {
-          exceptions: [Faraday::Error, Net::OpenTimeout, Net::ReadTimeout],
-          volume_threshold: 5,
-          sleep_window: 30,
-          error_threshold: 50,
-          time_window: 60
+      @circuit ||= Circuitbox.circuit(audience_name.to_sym, {
+        exceptions: [Faraday::Error, Net::OpenTimeout, Net::ReadTimeout],
+        volume_threshold: 5,   # Nombre min de requêtes avant d'évaluer
+        sleep_window: 60,      # Temps d'ouverture en secondes (>= time_window)
+        error_threshold: 50,   # Pourcentage d'échecs (50%)
+        time_window: 60        # Fenêtre glissante en secondes
       })
     end
 
+    # ===============================
+    # HEADERS DYNAMIQUES
+    # ===============================
     def dynamic_headers
       {
         "Content-Type" => "application/json",
@@ -98,11 +83,13 @@ class BaseClient
       raise NotImplementedError, "Define audience_name in subclass"
     end
 
+    # ===============================
+    # GESTION SÉCURISÉE DU CACHE DE TOKEN (Thread-Safe via Mutex)
+    # ===============================
     def token_cache
-      @token_caches ||= {}
-      @token_mutexes ||= {}
-      @token_mutexes[audience_name] ||= Mutex.new
-      [@token_caches, @token_mutexes[audience_name]]
+      @token_cache ||= {}
+      @mutex ||= Mutex.new
+      [@token_cache, @mutex]
     end
 
     def fetch_service_token
@@ -125,6 +112,9 @@ class BaseClient
       end
     end
 
+    # ===============================
+    # RESPONSE HANDLING
+    # ===============================
     def handle_response(response)
       if response.success?
         response.body
