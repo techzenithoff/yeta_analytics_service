@@ -1,11 +1,11 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rating-service-policy
+  name: analytics-service-policy
 spec:
   podSelector:
     matchLabels:
-      app: rating-service # Assure-toi que ton Job et ton Deployment ont ce label !
+      app: analytics-service # Assure-toi que ton Job et ton Deployment ont ce label !
   policyTypes:
     - Egress
   egress:

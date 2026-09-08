@@ -1,20 +1,20 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: db-migrate-rating-service
+  name: db-migrate-analytics-service
 spec:
   template:
     metadata:
       # --- AJOUT CRUCIAL ---
       labels:
-        app: rating-service 
+        app: analytics-service 
       # ---------------------
     spec:
       imagePullSecrets:
         - name: registry-yeta-registry
       containers:
         - name: db-migrate
-          image: registry.digitalocean.com/yeta-registry/rating-service
+          image: registry.digitalocean.com/yeta-registry/analytics-service
           #command: ["/bin/sh", "-c", "bundle exec rails db:migrate"]
           command: ["/bin/sh", "-c", "bundle exec rails db:migrate db:seed"]
           env:
@@ -23,13 +23,13 @@ spec:
             - name: RAILS_MASTER_KEY
               valueFrom:
                 secretKeyRef:
-                  name: rails-secret-rating-service
+                  name: rails-secret-analytics-service
                   key: RAILS_MASTER_KEY
           envFrom:
             - secretRef:
-                name: rating-service-env
+                name: analytics-service-env
             - secretRef:
-                name: rating-service-db
+                name: analytics-service-db
           volumeMounts:
             - name: rsa-keys-volume
               mountPath: /app/config/keys
@@ -37,7 +37,7 @@ spec:
       volumes:
         - name: rsa-keys-volume
           secret:
-            secretName: rating-service-keys
+            secretName: analytics-service-keys
             items:
               # Mapping : Clé du secret -> Chemin relatif dans mountPath
               - key: jwt-public-key

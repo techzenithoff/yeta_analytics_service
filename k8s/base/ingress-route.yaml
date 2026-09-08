@@ -1,7 +1,7 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: rating-service-route
+  name: analytics-service-route
   #namespace: production
 spec:
   entryPoints:
@@ -12,12 +12,12 @@ spec:
       kind: Rule
       priority: 500 # Priorité haute pour passer devant la gateway globale
       services:
-        - name: rating-service
+        - name: analytics-service
           port: 80
       middlewares:
-        - name: rating-service-headers
-        - name: rating-service-compress
-        - name: rating-service-buffering
+        - name: analytics-service-headers
+        - name: analytics-service-compress
+        - name: analytics-service-buffering
         - name: api-gateway-ratelimit
         # - name: strip-api-prefix # À garder si Rails répond 404 plus tard
   #tls:

@@ -3,7 +3,7 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: rating-service-headers
+  name: analytics-service-headers
   namespace: production
 spec:
   headers:
@@ -21,7 +21,7 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: rating-service-compress
+  name: analytics-service-compress
   namespace: production
 spec:
   compress: {}
@@ -31,7 +31,7 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: rating-service-buffering
+  name: analytics-service-buffering
   namespace: production
 spec:
   buffering:

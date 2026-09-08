@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rating-service
+  name: analytics-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: rating-service
+      app: analytics-service
   template:
     metadata:
       labels:
-        app: rating-service
+        app: analytics-service
     spec:
      # --- C'EST ICI QU'IL DOIT ÊTRE PLACÉ ---
       topologySpreadConstraints:
@@ -19,14 +19,14 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              app: rating-service
+              app: analytics-service
       # ---------------------------------------
 
       imagePullSecrets:
         - name: registry-yeta-registry
       containers:
-        - name: rating-service
-          image: registry.digitalocean.com/yeta-registry/rating-service:latest
+        - name: analytics-service
+          image: registry.digitalocean.com/yeta-registry/analytics-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -69,15 +69,15 @@ spec:
             - name: RAILS_MASTER_KEY
               valueFrom:
                 secretKeyRef:
-                  name: rails-secret-rating-service
+                  name: rails-secret-analytics-service
                   key: RAILS_MASTER_KEY
           
           # Injection automatique des variables PRODUCTION_POSTGRES_...
           envFrom:
             - secretRef:
-                name: rating-service-env    # Contient RAILS_ENV, URLs, et Timeouts
+                name: analytics-service-env    # Contient RAILS_ENV, URLs, et Timeouts
             - secretRef:
-                name: rating-service-db # Contient les infos DB
+                name: analytics-service-db # Contient les infos DB
             - secretRef:
                 name: rabbitmq-credentials # Contient les accès RabbitMQ
 
@@ -89,7 +89,7 @@ spec:
       volumes:
         - name: rsa-keys-volume
           secret:
-            secretName: rating-service-keys
+            secretName: analytics-service-keys
             items:
               # Mapping : Clé du secret -> Chemin relatif dans mountPath
               - key: jwt-public-key
