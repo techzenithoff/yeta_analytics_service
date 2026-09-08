@@ -10,22 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_07_23_105521) do
+ActiveRecord::Schema.define(version: 2026_09_03_090546) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "ratings", force: :cascade do |t|
-    t.uuid "uuid", null: false
-    t.string "ratable_type"
-    t.bigint "ratable_id"
-    t.integer "rating", default: 0
-    t.text "comment"
-    t.bigint "account_id", null: false
+  create_table "analytics_caches", force: :cascade do |t|
+    t.string "cache_key", null: false
+    t.json "data"
+    t.datetime "expires_at"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["account_id"], name: "index_ratings_on_account_id"
-    t.index ["ratable_type", "ratable_id"], name: "index_ratings_on_ratable"
+    t.index ["cache_key"], name: "index_analytics_caches_on_cache_key", unique: true
+    t.index ["expires_at"], name: "index_analytics_caches_on_expires_at"
   end
 
 end

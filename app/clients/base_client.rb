@@ -1,136 +1,144 @@
 # frozen_string_literal: true
 
 class BaseClient
-    include HTTParty
+  DEFAULT_TIMEOUT = 5
+  MAX_RETRIES = 2
 
-    DEFAULT_TIMEOUT = 5
-    MAX_RETRIES = 2
+  class << self
+    def request(method, path, options = {})
+      circuit.run(exception: [Faraday::Error, Circuitbox::OpenCircuitError]) do
+        response = connection.send(method) do |req|
+          req.url(path)
 
-    class << self
-        def request(method, path, options = {}, retries: MAX_RETRIES)
+          if options[:params].present?
+            req.params.update(sanitize_params(options[:params]))
+          end
 
-            headers = build_headers.merge(options[:headers] || {})
-            options = options.merge(headers: headers, timeout: options[:timeout] || DEFAULT_TIMEOUT)
+          merged_headers = dynamic_headers.merge(options[:headers] || {})
+          merged_headers.each { |k, v| req.headers[k] = v }
 
-            response = execute_with_retry(method, path, options, retries)
-            
-            #handle_response(response)
+          if options[:body].present?
+            req.body = options[:body].to_json
+          end
 
-            response.parsed_response
-
-
-        rescue Net::ReadTimeout, Net::OpenTimeout => e
-            log_error("Timeout", e)
-            error_response(:timeout)
-        rescue StandardError => e
-            log_error("Exception", e)
-            error_response(:exception)
+          req.options.timeout = options[:timeout] || DEFAULT_TIMEOUT
+          req.options.open_timeout = options[:open_timeout] || DEFAULT_TIMEOUT
         end
 
-
-
-
-        # ===============================
-        # HEADERS
-        # ===============================
-        def build_headers
-            token = fetch_service_token
-            {
-            "Content-Type" => "application/json",
-            "Accept" => "application/json",
-            "X-Internal-Service-Token" => token, # Header privilégié
-            "X-Source-Service" => ENV['SERVICE_NAME'],
-            "X-Request-ID" => request_id
-            }
-        end
-
-        def request_id
-            RequestStore.store[:request_id] || SecureRandom.uuid
-        end
-
-        # Le nom du service distant (audience pour le JWT)
-        def audience_name
-            raise NotImplementedError, "Define audience_name in subclass"
-        end
-
-        # GESTION DU TOKEN AVEC CACHE AMÉLIORÉ
-        def fetch_service_token
-            @token_cache ||= {}
-            cache_entry = @token_cache[audience_name]
-
-            # On vérifie si le token existe et s'il est encore valide (marge de 10s)
-            if cache_entry && cache_entry[:expires_at] > Time.current + 10
-            return cache_entry[:token]
-            end
-
-            # Sinon, on génère un nouveau token
-            token = Authenticate::InternalTokenService.encode(audience: audience_name)
-            
-            @token_cache[audience_name] = {
-            token: token,
-            expires_at: Time.current + 1.minute # Aligné sur la durée de vie du JWT
-            }
-
-            @token_cache[audience_name][:token]
-        end
-
-        # ===============================
-        # RETRY & RESPONSE
-        # ===============================
-        def execute_with_retry(method, path, options, retries)
-            attempts = 0
-            begin
-            attempts += 1
-            send(method, path, options)
-            rescue Net::ReadTimeout, Net::OpenTimeout => e
-            retry if attempts <= retries
-            raise e
-            end
-        end
-
-        def handle_response_OLD(response)
-            response.success? ? response.parsed_response : error_response("http_#{response.code}", response)
-        end
-
- 
-        def self.handle_response(response)
-            parsed = response.parsed_response
-            Rails.logger.info "DEBUG CLIENT: Parsed structure: #{parsed.inspect}"
-            # Si la réponse est un Hash (notre nouvelle structure d'enveloppe)
-            if parsed.is_a?(Hash) && parsed.key?('success')
-                SharedUtils::ServiceResponse.new(
-                success: parsed['success'], # Le booléen venant du Billing-Service
-                code:    response.code,
-                body:    parsed['body'],
-                error:   parsed['error']
-                )
-            else
-                # Cas d'erreur HTTP brute (ex: 500, 404)
-                SharedUtils::ServiceResponse.new(
-                success: response.success?,
-                code:    response.code,
-                body:    parsed,
-                error:   response.success? ? nil : "http_error_#{response.code}"
-                )
-            end
-        end
-
-
-
-        def log_error(type, error)
-            # On utilise ENV['SERVICE_NAME'] (soi-même) et audience_name (la cible)
-            Rails.logger.error "[#{ENV['SERVICE_NAME']}] Request to [#{audience_name}] #{type}: #{error.message}"
-        end
-
-        #def error_response(type, response = nil)
-        #    { error: type, status: response&.code, body: response&.body }
-        #end
-
-        def error_response(type, response = nil)
-            { 'success' => false, 'error' => type, 'status' => response&.code, 'body' => response&.body }
-        end
-
-
+        handle_response(response)
+      end
+    rescue Circuitbox::OpenCircuitError => e
+      log_error("CircuitOpen", e)
+      error_response(:circuit_open)
+    rescue Faraday::TimeoutError, Faraday::ConnectionFailed => e
+      log_error("Timeout/Connection", e)
+      error_response(:timeout)
+    rescue StandardError => e
+      log_error("Exception", e)
+      Rails.logger.error e.backtrace.first(15).join("\n")
+      error_response(:exception)
     end
 
+    private
+
+    def sanitize_params(params)
+      params.transform_keys(&:to_s).transform_values do |value|
+        case value
+        when Symbol
+          value.to_s
+        when Array
+          value.map { |v| v.is_a?(Symbol) ? v.to_s : v }
+        when Hash
+          sanitize_params(value)
+        else
+          value
+        end
+      end
+    end
+
+    def connection
+      @connections ||= {}
+      @connections[name] ||= Faraday.new(url: base_url) do |faraday|
+        faraday.request :json
+        faraday.response :json, content_type: /\bjson$/
+        faraday.adapter Faraday.default_adapter
+      end
+    end
+
+    def base_url
+      raise NotImplementedError, "Define base_url in subclass"
+    end
+
+    def circuit
+      @circuits ||= {}
+      @circuits[audience_name] ||= Circuitbox.circuit(audience_name.to_sym, {
+          exceptions: [Faraday::Error, Net::OpenTimeout, Net::ReadTimeout],
+          volume_threshold: 5,
+          sleep_window: 30,
+          error_threshold: 50,
+          time_window: 60
+      })
+    end
+
+    def dynamic_headers
+      {
+        "Content-Type" => "application/json",
+        "Accept" => "application/json",
+        "X-Internal-Service-Token" => fetch_service_token,
+        "X-Source-Service" => ENV.fetch('SERVICE_NAME', 'unknown-service'),
+        "X-Request-ID" => request_id
+      }
+    end
+
+    def request_id
+      RequestStore.store[:request_id] || SecureRandom.uuid
+    end
+
+    def audience_name
+      raise NotImplementedError, "Define audience_name in subclass"
+    end
+
+    def token_cache
+      @token_caches ||= {}
+      @token_mutexes ||= {}
+      @token_mutexes[audience_name] ||= Mutex.new
+      [@token_caches, @token_mutexes[audience_name]]
+    end
+
+    def fetch_service_token
+      cache, mutex = token_cache
+
+      mutex.synchronize do
+        cache_entry = cache[audience_name]
+        if cache_entry && cache_entry[:expires_at] > Time.current + 10
+          return cache_entry[:token]
+        end
+
+        token = Authenticate::InternalTokenService.encode(audience: audience_name)
+
+        cache[audience_name] = {
+          token: token,
+          expires_at: Time.current + 1.minute
+        }
+
+        cache[audience_name][:token]
+      end
+    end
+
+    def handle_response(response)
+      if response.success?
+        response.body
+      else
+        error_response("http_#{response.status}", response)
+      end
+    end
+
+    def log_error(type, error)
+      Rails.logger.error "[#{ENV['SERVICE_NAME']}] Request to [#{audience_name}] #{type}: #{error.message}"
+    end
+
+    def error_response(type, response = nil)
+      { error: type, status: response&.status, body: response&.body }
+    end
+  end
 end

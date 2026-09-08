@@ -5,14 +5,14 @@ default: &default
 
 development:
   <<: *default
-  database: <%= ENV.fetch("DEVELOPMENT_POSTGRES_DB") { "watch_history_service_development" } %>
+  database: <%= ENV.fetch("DEVELOPMENT_POSTGRES_DB") { "analytics_service_development" } %>
   host: <%= ENV.fetch("DEVELOPMENT_POSTGRES_HOST") { "localhost" } %>
   username: <%= ENV.fetch("DEVELOPMENT_POSTGRES_USER") { "postgres" } %>
   password: <%= ENV.fetch("DEVELOPMENT_POSTGRES_PASSWORD") { "" } %>
 
 test:
   <<: *default
-  database: <%= ENV.fetch("TEST_POSTGRES_DB") { "watch_history_service_test" } %>
+  database: <%= ENV.fetch("TEST_POSTGRES_DB") { "analytics_service_test" } %>
   host: <%= ENV.fetch("TEST_POSTGRES_HOST") { "localhost" } %>
   username: <%= ENV.fetch("TEST_POSTGRES_USER") { "postgres" } %>
   password: <%= ENV.fetch("TEST_POSTGRES_PASSWORD") { "" } %>

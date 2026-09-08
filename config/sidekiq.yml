@@ -1,0 +1,6 @@
+---
+:concurrency: 5
+:queues:
+  - [default, 3]
+  - [analytics_sync, 2]
+  - [critical, 5]

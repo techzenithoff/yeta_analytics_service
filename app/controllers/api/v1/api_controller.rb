@@ -1,7 +1,7 @@
 module Api::V1
 	class ApiController < ApplicationController
 		
-		include Pagy::Backend
+		#include Pagy::Backend
 
 		#before_action :authenticate_account!
 

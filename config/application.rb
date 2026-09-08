@@ -22,7 +22,7 @@ Bundler.require(*Rails.groups)
 # Custom
 #require './lib/shared_utils/utils'
 
-module WatchHistoryService
+module AnalyticsService
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 6.1
@@ -49,6 +49,14 @@ module WatchHistoryService
    
     config.autoload_paths << Rails.root.join('app/services')
     config.eager_load_paths << Rails.root.join('app/services')
+
+  
+    # Time Zone
+    config.time_zone = 'UTC'
+    config.i18n.default_locale = :en
+
+    # Autoload paths
+    #config.eager_load_paths += %W(#{config.root}/lib)
 
 
   end
