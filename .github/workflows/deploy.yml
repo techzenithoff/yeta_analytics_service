@@ -94,7 +94,7 @@ jobs:
           kubectl create secret generic analytics-service-db \
             --from-literal=PRODUCTION_POSTGRES_HOST=${{ vars.POSTGRES_HOST }} \
             --from-literal=PRODUCTION_POSTGRES_USER=${{ vars.POSTGRES_USER }} \
-            --from-literal=PRODUCTION_POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            --from-literal=PRODUCTION_POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
             --from-literal=PRODUCTION_POSTGRES_DB=${{ vars.POSTGRES_DB }} \
             --from-literal=PRODUCTION_POSTGRES_PORT=${{ vars.POSTGRES_PORT }} \
             -n ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -

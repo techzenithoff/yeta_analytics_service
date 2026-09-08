@@ -4,5 +4,5 @@ resources:
   - ../../base
 
 images:
-  - name: registry.digitalocean.com/yeta-registry/rating-service
+  - name: registry.digitalocean.com/yeta-registry/analytics-service
     newTag: latest # Ce mot "latest" sera remplacé par le SHA lors du déploiement
