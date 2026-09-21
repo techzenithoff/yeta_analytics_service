@@ -17,7 +17,7 @@ module Profiles
       return {} if account_ids.blank?
 
       # Le BaseClient retourne directement response.body (Array)
-      customers = request(:get, '/internal/api/v1/customers', params: { account_ids: account_ids.join(',') })
+      customers = request(:get, 'customers', params: { account_ids: account_ids.join(',') })
 
       puts "✅ [CustomerClient] Customers fetched: #{customers.inspect}"
 

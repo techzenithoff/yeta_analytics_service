@@ -14,17 +14,18 @@ module WatchHistory
     # Récupère l'historique avec filtres (utilise l'action filter)
     def self.list(filters = {})
       puts "📤 [HistoryClient] Fetching watch histories with filters: #{filters}"
-      path = "/internal/api/v1/watch-histories/filter"
+      path = "watch-histories/filter"
 
       # ✅ Sanitize récursivement clés ET valeurs (Symbol -> String, Date/Time -> iso8601)
       sanitized_filters = deep_sanitize(filters)
-      body = { filters: sanitized_filters }
+      body = { filters: sanitized_filters, per_page: 1000 }
 
       response = request(:post, path, body: body)
 
-      puts "✅ [HistoryClient] Response: #{response.inspect}"
-      return [] if response.blank? || response[:error]
-      response || []
+      puts "✅ [HistoryClient] Response: #{response.inspect[0, 300]}"
+      return [] if response.blank? || error_response?(response)
+
+      response
     rescue StandardError => e
       Rails.logger.error "[HistoryClient] Failed to fetch watch histories: #{e.message}"
       Rails.logger.error e.backtrace.first(15).join("\n")
@@ -78,14 +79,15 @@ module WatchHistory
 
       account_id = account_id.to_i  # ✅ Convertir en Integer
       puts "📤 [HistoryClient] Fetching watch histories for account_id: #{account_id}"
-      path = "/internal/api/v1/watch-histories/by-account/#{account_id}"
+      path = "watch-histories/by-account/#{account_id}"
 
       params = { page: page.to_i, per_page: per_page.to_i }  # ✅ Convertir en Integer
       response = request(:get, path, params: params)
 
-      puts "✅ [HistoryClient] Response: #{response.inspect}"
-      return [] if response.blank? || response[:error]
-      response || []
+      puts "✅ [HistoryClient] Response: #{response.inspect[0, 300]}"
+      return [] if response.blank? || error_response?(response)
+
+      response
     rescue StandardError => e
       Rails.logger.error "[HistoryClient] Failed to fetch watch history for account: #{e.message}"
       puts "❌ [HistoryClient] Error: #{e.message}"
@@ -95,7 +97,7 @@ module WatchHistory
     # Récupère les stats
     def self.get_stats(account_ids = [])
       puts "📤 [HistoryClient] Fetching stats for account_ids: #{account_ids}"
-      path = "/internal/api/v1/watch-histories/stats"
+      path = "watch-histories/stats"
 
       params = {}
       if account_ids.present?
@@ -107,13 +109,20 @@ module WatchHistory
 
       response = request(:get, path, params: params)
 
-      puts "✅ [HistoryClient] Stats: #{response.inspect}"
-      return {} if response.blank? || response[:error]
-      response || {}
+      puts "✅ [HistoryClient] Stats: #{response.inspect[0, 300]}"
+      return {} if response.blank? || error_response?(response)
+
+      response
     rescue StandardError => e
       Rails.logger.error "[HistoryClient] Failed to fetch stats: #{e.message}"
       puts "❌ [HistoryClient] Error: #{e.message}"
       {}
+    end
+
+    # ✅ Une erreur du BaseClient est un Hash {error: ..., status: ...}.
+    # Une réponse valide peut être un Array : on ne teste [:error] que sur un Hash.
+    def self.error_response?(response)
+      response.is_a?(Hash) && response[:error].present?
     end
 
     # ✅ Sanitize récursif : clés en String, Symbols en String, Date/Time en iso8601
