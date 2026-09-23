@@ -45,3 +45,24 @@ spec:
           port: 80
         - protocol: TCP
           port: 3000
+    # Communication Inter-Service (Profile Service)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: profile-service
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 3000
+
+    # Communication Inter-Service (Watch Service)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: watch-history-service
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 3000
