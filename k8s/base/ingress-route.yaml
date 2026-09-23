@@ -8,7 +8,7 @@ spec:
     #- websecure
     - web
   routes:
-    - match: Host(`api.yetaplus.com`) && (PathPrefix(`/api/v1/ratings`))
+    - match: Host(`api.yetaplus.com`) && (PathPrefix(`/api/v1/analytics`))
       kind: Rule
       priority: 500 # Priorité haute pour passer devant la gateway globale
       services:
